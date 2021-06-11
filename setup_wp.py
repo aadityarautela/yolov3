@@ -42,9 +42,7 @@ for train_label_path in train_labels_path_list:
 
     training_train_label_lines = []
 
-    print(train_label_path)
     for line in train_label_lines:
-        print(line)
         wp_label, x1, y1, x2, y2 = line.split()
         wp_label = int(wp_label)
         x1 = int(x1)
