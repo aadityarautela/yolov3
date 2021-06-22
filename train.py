@@ -247,8 +247,8 @@ def train(hyp, opt, device, tb_writer=None):
                 f'Logging results to {save_dir}\n'
                 f'Starting training for {epochs} epochs...')
     for epoch in range(start_epoch, epochs):  # epoch ------------------------------------------------------------------
-        # model.train()
-        model.eval()
+        model.train()
+      
         # Update image weights (optional)
         if opt.image_weights:
             # Generate indices

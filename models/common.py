@@ -8,6 +8,7 @@ import numpy as np
 import pandas as pd
 import requests
 import torch
+from torch.functional import Tensor
 import torch.nn as nn
 from PIL import Image
 from torch.cuda import amp
@@ -122,7 +123,10 @@ class BottleneckAttention(nn.Module):
         self.bam = BAM(c1)
 
     def forward(self, x):
-        return self.bam(x + self.cv2(self.cv1(x))) if self.add else self.bam(self.cv2(self.cv1(x)))
+        if x.shape[0] != 1:
+            return self.bam(x + self.cv2(self.cv1(x))) if self.add else self.bam(self.cv2(self.cv1(x)))
+        else:
+            return x + self.cv2(self.cv1(x)) if self.add else self.cv2(self.cv1(x))
 
 
 class BottleneckCSP(nn.Module):
@@ -473,8 +477,12 @@ class ChannelGate(nn.Module):
             gate_channels[-2], gate_channels[-1]))
 
     def forward(self, in_tensor):
+        kernel_size = in_tensor.size(2)
+        if isinstance(in_tensor.size(2), Tensor):
+            kernel_size = in_tensor.size(2).item()
+        # print(type(kernel_size))
         avg_pool = F.avg_pool2d(
-            in_tensor, in_tensor.size(2), stride=in_tensor.size(2))
+            in_tensor, kernel_size, stride=kernel_size)
         return self.gate_c(avg_pool).unsqueeze(2).unsqueeze(3).expand_as(in_tensor)
 
 
