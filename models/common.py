@@ -110,23 +110,37 @@ class Bottleneck(nn.Module):
     def forward(self, x):
         return x + self.cv2(self.cv1(x)) if self.add else self.cv2(self.cv1(x))
 
-
-class BottleneckAttention(nn.Module):
-    # BAM
+class BottleneckCBAM(nn.Module):
+    # CBAM bottleneck
     # ch_in, ch_out, shortcut, groups, expansion
     def __init__(self, c1, c2, shortcut=True, g=1, e=0.5):
-        super(BottleneckAttention, self).__init__()
+        super(BottleneckCBAM, self).__init__()
         c_ = int(c2 * e)  # hidden channels
         self.cv1 = Conv(c1, c_, 1, 1)
         self.cv2 = Conv(c_, c2, 3, 1, g=g)
         self.add = shortcut and c1 == c2
-        self.bam = BAM(c1)
+        self.cbam = CBAM(c1)
 
     def forward(self, x):
-        if x.shape[0] != 1:
-            return self.bam(x + self.cv2(self.cv1(x))) if self.add else self.bam(self.cv2(self.cv1(x)))
-        else:
-            return x + self.cv2(self.cv1(x)) if self.add else self.cv2(self.cv1(x))
+        return self.cbam(x + self.cv2(self.cv1(x))) if self.add else self.cbam(self.cv2(self.cv1(x)))
+
+
+# class BottleneckAttention(nn.Module):
+#     # BAM
+#     # ch_in, ch_out, shortcut, groups, expansion
+#     def __init__(self, c1, c2, shortcut=True, g=1, e=0.5):
+#         super(BottleneckAttention, self).__init__()
+#         c_ = int(c2 * e)  # hidden channels
+#         self.cv1 = Conv(c1, c_, 1, 1)
+#         self.cv2 = Conv(c_, c2, 3, 1, g=g)
+#         self.add = shortcut and c1 == c2
+#         self.bam = BAM(c1)
+
+#     def forward(self, x):
+#         if x.shape[0] != 1:
+#             return self.bam(x + self.cv2(self.cv1(x))) if self.add else self.bam(self.cv2(self.cv1(x)))
+#         else:
+#             return x + self.cv2(self.cv1(x)) if self.add else self.cv2(self.cv1(x))
 
 
 class BottleneckCSP(nn.Module):
@@ -454,67 +468,144 @@ class Classify(nn.Module):
 # BAM
 
 
+# class Flatten(nn.Module):
+#     def forward(self, x):
+#         return x.view(x.size(0), -1)
+
+
+# class ChannelGate(nn.Module):
+#     def __init__(self, gate_channel, reduction_ratio=16, num_layers=1):
+#         super(ChannelGate, self).__init__()
+#         self.gate_c = nn.Sequential()
+#         self.gate_c.add_module('flatten', Flatten())
+#         gate_channels = [gate_channel]
+#         gate_channels += [gate_channel // reduction_ratio] * num_layers
+#         gate_channels += [gate_channel]
+#         for i in range(len(gate_channels) - 2):
+#             self.gate_c.add_module('gate_c_fc_%d' % i, nn.Linear(
+#                 gate_channels[i], gate_channels[i+1]))
+#             self.gate_c.add_module('gate_c_bn_%d' % (
+#                 i+1), nn.BatchNorm1d(gate_channels[i+1]))
+#             self.gate_c.add_module('gate_c_relu_%d' % (i+1), nn.ReLU())
+#         self.gate_c.add_module('gate_c_fc_final', nn.Linear(
+#             gate_channels[-2], gate_channels[-1]))
+
+#     def forward(self, in_tensor):
+#         kernel_size = in_tensor.size(2)
+#         if isinstance(in_tensor.size(2), Tensor):
+#             kernel_size = in_tensor.size(2).item()
+#         # print(type(kernel_size))
+#         avg_pool = F.avg_pool2d(
+#             in_tensor, kernel_size, stride=kernel_size)
+#         return self.gate_c(avg_pool).unsqueeze(2).unsqueeze(3).expand_as(in_tensor)
+
+
+# class SpatialGate(nn.Module):
+#     def __init__(self, gate_channel, reduction_ratio=16, dilation_conv_num=2, dilation_val=4):
+#         super(SpatialGate, self).__init__()
+#         self.gate_s = nn.Sequential()
+#         self.gate_s.add_module('gate_s_conv_reduce0', nn.Conv2d(
+#             gate_channel, gate_channel//reduction_ratio, kernel_size=1))
+#         self.gate_s.add_module('gate_s_bn_reduce0',	nn.BatchNorm2d(
+#             gate_channel//reduction_ratio))
+#         self.gate_s.add_module('gate_s_relu_reduce0', nn.ReLU())
+#         for i in range(dilation_conv_num):
+#             self.gate_s.add_module('gate_s_conv_di_%d' % i, nn.Conv2d(gate_channel//reduction_ratio, gate_channel//reduction_ratio, kernel_size=3,
+#                                                                       padding=dilation_val, dilation=dilation_val))
+#             self.gate_s.add_module('gate_s_bn_di_%d' % i, nn.BatchNorm2d(
+#                 gate_channel//reduction_ratio))
+#             self.gate_s.add_module('gate_s_relu_di_%d' % i, nn.ReLU())
+#         self.gate_s.add_module('gate_s_conv_final', nn.Conv2d(
+#             gate_channel//reduction_ratio, 1, kernel_size=1))
+
+#     def forward(self, in_tensor):
+#         return self.gate_s(in_tensor).expand_as(in_tensor)
+
+
+# class BAM(nn.Module):
+#     def __init__(self, gate_channel):
+#         super(BAM, self).__init__()
+#         self.channel_att = ChannelGate(gate_channel)
+#         self.spatial_att = SpatialGate(gate_channel)
+
+#     def forward(self, in_tensor):
+#         att = 1 + F.sigmoid(self.channel_att(in_tensor)
+#                             * self.spatial_att(in_tensor))
+#         return att * in_tensor
+
+# CBAM
+
 class Flatten(nn.Module):
     def forward(self, x):
         return x.view(x.size(0), -1)
 
-
 class ChannelGate(nn.Module):
-    def __init__(self, gate_channel, reduction_ratio=16, num_layers=1):
+    def __init__(self, gate_channels, reduction_ratio=16, pool_types=['avg', 'max']):
         super(ChannelGate, self).__init__()
-        self.gate_c = nn.Sequential()
-        self.gate_c.add_module('flatten', Flatten())
-        gate_channels = [gate_channel]
-        gate_channels += [gate_channel // reduction_ratio] * num_layers
-        gate_channels += [gate_channel]
-        for i in range(len(gate_channels) - 2):
-            self.gate_c.add_module('gate_c_fc_%d' % i, nn.Linear(
-                gate_channels[i], gate_channels[i+1]))
-            self.gate_c.add_module('gate_c_bn_%d' % (
-                i+1), nn.BatchNorm1d(gate_channels[i+1]))
-            self.gate_c.add_module('gate_c_relu_%d' % (i+1), nn.ReLU())
-        self.gate_c.add_module('gate_c_fc_final', nn.Linear(
-            gate_channels[-2], gate_channels[-1]))
+        self.gate_channels = gate_channels
+        self.mlp = nn.Sequential(
+            Flatten(),
+            nn.Linear(gate_channels, gate_channels // reduction_ratio),
+            nn.ReLU(),
+            nn.Linear(gate_channels // reduction_ratio, gate_channels)
+            )
+        self.pool_types = pool_types
+    def forward(self, x):
+        channel_att_sum = None
+        for pool_type in self.pool_types:
+            if pool_type=='avg':
+                avg_pool = F.avg_pool2d( x, (x.size(2), x.size(3)), stride=(x.size(2), x.size(3)))
+                channel_att_raw = self.mlp( avg_pool )
+            elif pool_type=='max':
+                max_pool = F.max_pool2d( x, (x.size(2), x.size(3)), stride=(x.size(2), x.size(3)))
+                channel_att_raw = self.mlp( max_pool )
+            elif pool_type=='lp':
+                lp_pool = F.lp_pool2d( x, 2, (x.size(2), x.size(3)), stride=(x.size(2), x.size(3)))
+                channel_att_raw = self.mlp( lp_pool )
+            elif pool_type=='lse':
+                # LSE pool only
+                lse_pool = logsumexp_2d(x)
+                channel_att_raw = self.mlp( lse_pool )
 
-    def forward(self, in_tensor):
-        kernel_size = in_tensor.size(2)
-        if isinstance(in_tensor.size(2), Tensor):
-            kernel_size = in_tensor.size(2).item()
-        # print(type(kernel_size))
-        avg_pool = F.avg_pool2d(
-            in_tensor, kernel_size, stride=kernel_size)
-        return self.gate_c(avg_pool).unsqueeze(2).unsqueeze(3).expand_as(in_tensor)
+            if channel_att_sum is None:
+                channel_att_sum = channel_att_raw
+            else:
+                channel_att_sum = channel_att_sum + channel_att_raw
 
+        scale = F.sigmoid( channel_att_sum ).unsqueeze(2).unsqueeze(3).expand_as(x)
+        return x * scale
+
+def logsumexp_2d(tensor):
+    tensor_flatten = tensor.view(tensor.size(0), tensor.size(1), -1)
+    s, _ = torch.max(tensor_flatten, dim=2, keepdim=True)
+    outputs = s + (tensor_flatten - s).exp().sum(dim=2, keepdim=True).log()
+    return outputs
+
+class ChannelPool(nn.Module):
+    def forward(self, x):
+        return torch.cat( (torch.max(x,1)[0].unsqueeze(1), torch.mean(x,1).unsqueeze(1)), dim=1 )
 
 class SpatialGate(nn.Module):
-    def __init__(self, gate_channel, reduction_ratio=16, dilation_conv_num=2, dilation_val=4):
+    def __init__(self):
         super(SpatialGate, self).__init__()
-        self.gate_s = nn.Sequential()
-        self.gate_s.add_module('gate_s_conv_reduce0', nn.Conv2d(
-            gate_channel, gate_channel//reduction_ratio, kernel_size=1))
-        self.gate_s.add_module('gate_s_bn_reduce0',	nn.BatchNorm2d(
-            gate_channel//reduction_ratio))
-        self.gate_s.add_module('gate_s_relu_reduce0', nn.ReLU())
-        for i in range(dilation_conv_num):
-            self.gate_s.add_module('gate_s_conv_di_%d' % i, nn.Conv2d(gate_channel//reduction_ratio, gate_channel//reduction_ratio, kernel_size=3,
-                                                                      padding=dilation_val, dilation=dilation_val))
-            self.gate_s.add_module('gate_s_bn_di_%d' % i, nn.BatchNorm2d(
-                gate_channel//reduction_ratio))
-            self.gate_s.add_module('gate_s_relu_di_%d' % i, nn.ReLU())
-        self.gate_s.add_module('gate_s_conv_final', nn.Conv2d(
-            gate_channel//reduction_ratio, 1, kernel_size=1))
+        kernel_size = 7
+        self.compress = ChannelPool()
+        self.spatial = Conv(2, 1, kernel_size, s=1, p=(kernel_size-1) // 2, act=False)
+    def forward(self, x):
+        x_compress = self.compress(x)
+        x_out = self.spatial(x_compress)
+        scale = torch.sigmoid(x_out) # broadcasting
+        return x * scale
 
-    def forward(self, in_tensor):
-        return self.gate_s(in_tensor).expand_as(in_tensor)
-
-
-class BAM(nn.Module):
-    def __init__(self, gate_channel):
-        super(BAM, self).__init__()
-        self.channel_att = ChannelGate(gate_channel)
-        self.spatial_att = SpatialGate(gate_channel)
-
-    def forward(self, in_tensor):
-        att = 1 + F.sigmoid(self.channel_att(in_tensor)
-                            * self.spatial_att(in_tensor))
-        return att * in_tensor
+class CBAM(nn.Module):
+    def __init__(self, gate_channels, reduction_ratio=16, pool_types=['avg', 'max'], no_spatial=False):
+        super(CBAM, self).__init__()
+        self.ChannelGate = ChannelGate(gate_channels, reduction_ratio, pool_types)
+        self.no_spatial=no_spatial
+        if not no_spatial:
+            self.SpatialGate = SpatialGate()
+    def forward(self, x):
+        x_out = self.ChannelGate(x)
+        if not self.no_spatial:
+            x_out = self.SpatialGate(x_out)
+        return x_out
