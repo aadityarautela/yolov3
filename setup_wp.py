@@ -34,13 +34,24 @@ train_labels_path_list = [os.path.join(wp_dataset_labels_directory,
 for train_label_path in train_labels_path_list:
     img_path = os.path.join(wp_dataset_imgs_directory,
                             os.path.basename(train_label_path)[:-4])
-    w, h = Image.open(img_path).size
+    img = Image.open(img_path)
+    w, h = img.size
+    img.close()
+
+    # Horizontal Flip
+    img_vertical = Image.open(img_path).transpose(method=Image.FLIP_LEFT_RIGHT)
+    img_vertical_path = os.path.join(wp_training_train_images_path,
+                                     os.path.basename(train_label_path)[:-8] + '_vertical.jpg')
+    img_vertical.save(img_vertical_path)
+    img_vertical.close()
+
     train_label_lines = []
     with open(train_label_path, 'r') as f:
         train_label_lines = f.readlines()
     train_label_lines = train_label_lines[1:]
 
     training_train_label_lines = []
+    training_train_label_lines_vertical = []
 
     for line in train_label_lines:
         wp_label, x1, y1, x2, y2 = line.split()
@@ -57,9 +68,21 @@ for train_label_path in train_labels_path_list:
         yolo_line = " ".join(
             [yolo_label, xc, yc, yolo_width, yolo_height, '\n'])
         training_train_label_lines.append(yolo_line)
+
+        x1_vertical = w - x2
+        x2_vertical = w - x1
+        xc_vertical = str((x2_vertical+x1_vertical)/(2*w))
+        yolo_line_vertical = " ".join(
+            [yolo_label, xc_vertical, yc, yolo_width, yolo_height, '\n'])
+        training_train_label_lines_vertical.append(yolo_line_vertical)
+
     with open(os.path.join(wp_training_train_labels_path,
                            os.path.basename(train_label_path)[:-8] + '.txt'), 'w') as f:
         f.writelines(training_train_label_lines)
+
+    with open(os.path.join(wp_training_train_labels_path,
+                           os.path.basename(train_label_path)[:-8] + '_vertical.txt'), 'w') as f:
+        f.writelines(training_train_label_lines_vertical)
 
 # Validation Data
 
