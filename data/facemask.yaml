@@ -1,0 +1,6 @@
+train: Dataset/FaceMask/images/train
+val: Dataset/FaceMask/images/validation
+
+  # number of classes
+nc: 3
+names: ['With_Mask', 'Without_Mask', 'Incorrect_Mask']
