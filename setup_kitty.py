@@ -55,7 +55,7 @@ for img_path in kitty_imagedir_list:
                 yc = str((y1+y2)/(2*h))
                 yolo_width = str((x2-x1)/w)
                 yolo_height = str((y2-y1)/h)
-                yolo_class = kitty_names_dict[line_split[0]]
+                yolo_class = str(kitty_names_dict[line_split[0]])
                 line_output = " ".join(
                     [yolo_class, xc, yc, yolo_width, yolo_height, '\n'])
                 lines_output.append(line_output)
