@@ -47,10 +47,10 @@ for img_path in kitty_imagedir_list:
         line_split = line.split()
         if len(line_split) == 15:
             if line_split[0] != 'DontCare':
-                x1 = int(line_split[4])
-                y1 = int(line_split[5])
-                x2 = int(line_split[6])
-                y2 = int(line_split[7])
+                x1 = float(line_split[4])
+                y1 = float(line_split[5])
+                x2 = float(line_split[6])
+                y2 = float(line_split[7])
                 xc = str((x1+x2)/(2*w))
                 yc = str((y1+y2)/(2*h))
                 yolo_width = str((x2-x1)/w)
