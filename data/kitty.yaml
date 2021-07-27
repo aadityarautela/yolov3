@@ -1,0 +1,15 @@
+train: data/kitty/images/train
+val: data/kitty/images/validation
+
+nc: 8
+names:
+  [
+    "Car",
+    "Van",
+    "Truck",
+    "Pedestrian",
+    "Person_sitting",
+    "Cyclist",
+    "Tram",
+    "Misc",
+  ]
