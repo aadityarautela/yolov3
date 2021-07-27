@@ -64,7 +64,7 @@ for img_path in kitty_imagedir_list:
         f.writelines(lines_output)
 
 kitty_id_list = [x[-10:] for x in kitty_imagedir_list]
-kitty_id_list = [x[:-4] for x in kitty_imagedir_list]
+kitty_id_list = [x[:-4] for x in kitty_id_list]
 train_id_list, validation_id_list = train_test_split(
     kitty_id_list, test_size=0.2, random_state=1)
 
