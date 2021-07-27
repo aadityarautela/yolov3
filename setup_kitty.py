@@ -72,10 +72,10 @@ for id in train_id_list:
     shutil.copy(kitty_imagedir + id + '.png',
                 kitty_ds_dir_images_train + id + '.png')
     shutil.copy(kitty_modified_labeldir + id + '.txt',
-                kitty_ds_dir_labels_train + id + '.png')
+                kitty_ds_dir_labels_train + id + '.txt')
 
 for id in validation_id_list:
     shutil.copy(kitty_imagedir + id + '.png',
                 kitty_ds_dir_images_validation + id + '.png')
     shutil.copy(kitty_modified_labeldir + id + '.txt',
-                kitty_ds_dir_labels_validation + id + '.png')
+                kitty_ds_dir_labels_validation + id + '.txt')
